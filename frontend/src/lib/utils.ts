@@ -29,38 +29,65 @@ export function formatScore(score?: number | null): string {
 
 /**
  * Return Tailwind color classes based on lifecycle status.
+ * Theme: Black / White / Red only.
  */
 export function statusColor(status?: string): { bg: string; text: string; badge: string } {
   switch (status?.toLowerCase()) {
     case "active":
+    case "ongoing":
+    case "in_progress":
+    case "live":
+      return {
+        bg: "bg-red-600/8 border-red-600/30",
+        text: "text-red-500",
+        badge: "bg-red-600/10 text-red-400 border-red-600/30",
+      };
     case "completed":
     case "analyzed":
+    case "done":
+    case "passed":
       return {
-        bg: "bg-emerald-500/10 border-emerald-500/30",
-        text: "text-emerald-400",
-        badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+        bg: "bg-white/8 border-white/20",
+        text: "text-white",
+        badge: "bg-white/10 text-zinc-100 border-white/20",
       };
     case "scheduled":
     case "waiting":
+    case "pending":
+      return {
+        bg: "bg-white/4 border-white/10",
+        text: "text-zinc-400",
+        badge: "bg-white/5 text-zinc-400 border-white/10",
+      };
     case "processing":
     case "uploaded":
       return {
-        bg: "bg-amber-500/10 border-amber-500/30",
-        text: "text-amber-400",
-        badge: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+        bg: "bg-white/4 border-white/10",
+        text: "text-zinc-300",
+        badge: "bg-white/5 text-zinc-300 border-white/10",
       };
     case "cancelled":
-    case "error":
+    case "missed":
+    case "errored":
       return {
-        bg: "bg-rose-500/10 border-rose-500/30",
-        text: "text-rose-400",
-        badge: "bg-rose-500/20 text-rose-300 border-rose-500/30",
+        bg: "bg-zinc-900 border-zinc-700",
+        text: "text-zinc-500",
+        badge: "bg-zinc-900 text-zinc-500 border-zinc-700",
+      };
+    case "failed":
+    case "error":
+    case "flagged":
+    case "liveness_failed":
+      return {
+        bg: "bg-red-600/10 border-red-600/40",
+        text: "text-red-500",
+        badge: "bg-red-600/10 text-red-400 border-red-600/40",
       };
     default:
       return {
-        bg: "bg-slate-500/10 border-slate-500/30",
-        text: "text-slate-400",
-        badge: "bg-slate-500/20 text-slate-300 border-slate-500/30",
+        bg: "bg-white/4 border-white/10",
+        text: "text-zinc-500",
+        badge: "bg-white/5 text-zinc-500 border-white/10",
       };
   }
 }

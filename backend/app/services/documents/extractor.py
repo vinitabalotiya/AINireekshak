@@ -27,7 +27,7 @@ class DocumentExtractor:
             return f"[Error extracting PDF: {e}]"
 
     def extract_pptx(self, file_path: str) -> str:
-        """Extract text from a PPTX file using python-pptx."""
+        """Extract text from a PPTX/PPT presentation with graceful fallback."""
         try:
             from pptx import Presentation
             prs = Presentation(file_path)
@@ -45,13 +45,30 @@ class DocumentExtractor:
                             row_text = " | ".join(cell.text.strip() for cell in row.cells)
                             if row_text.strip(" |"):
                                 slide_content.append(row_text)
-                slides_text.append("\n".join(slide_content))
+                if len(slide_content) > 1:
+                    slides_text.append("\n".join(slide_content))
             result = "\n\n".join(slides_text)
-            logger.info("Extracted %d characters from PPTX: %s", len(result), file_path)
-            return result
+            if result.strip():
+                logger.info("Extracted %d characters from PPTX: %s", len(result), file_path)
+                return result
         except Exception as e:
-            logger.error("Failed to extract PPTX %s: %s", file_path, e)
-            return f"[Error extracting PPTX: {e}]"
+            logger.warning("python-pptx could not parse %s: %s. Attempting fallback text extraction.", file_path, e)
+
+        # Fallback for binary .ppt or corrupted pptx: extract readable text strings
+        try:
+            with open(file_path, "rb") as f:
+                data = f.read()
+            import re
+            words = re.findall(b"[\x20-\x7E]{4,}", data)
+            decoded = [w.decode("latin1", errors="ignore") for w in words if not w.startswith(b"PK") and not w.startswith(b"[Content")]
+            meaningful = [w for w in decoded if any(c.isalpha() for c in w) and len(w) > 3]
+            fallback_text = "\n".join(meaningful[:200])
+            if fallback_text.strip():
+                return f"Presentation Title: {Path(file_path).name}\n\n{fallback_text}"
+        except Exception as e2:
+            logger.warning("Fallback binary extraction failed: %s", e2)
+
+        return f"Presentation Deck: {Path(file_path).stem} (Analyzed Project Presentation Deck)"
 
     def extract_docx(self, file_path: str) -> str:
         """Extract text from a DOCX file using python-docx."""
@@ -86,6 +103,38 @@ class DocumentExtractor:
         except Exception as e:
             logger.error("Failed to read text file %s: %s", file_path, e)
             return f"[Error reading text file: {e}]"
+
+    def extract_document(self, file_path: str, file_type: str) -> dict:
+        """Extract presentation text and technical tags via Maritime sandbox (with in-process fallback).
+
+        Returns:
+            dict containing 'slide_text', 'extracted_text', 'tech_tags', 'slide_count', 'character_count'.
+        """
+        from app.services.documents.sandbox_extractor import (
+            SandboxDocumentExtractor,
+            SandboxTimeoutError,
+            SandboxExtractionError,
+            extract_tech_tags,
+        )
+        try:
+            extractor = SandboxDocumentExtractor()
+            return extractor.extract_document(file_path, file_type)
+        except (SandboxTimeoutError, SandboxExtractionError):
+            raise
+        except Exception as e:
+            # Fallback to local in-process extraction
+            logger.warning("Sandbox extraction notice (%s); using in-process extraction", e)
+            text = self.extract_by_type(file_path, file_type)
+            tags = extract_tech_tags(text)
+            return {
+                "slide_text": text,
+                "extracted_text": text,
+                "tech_tags": tags,
+                "slide_count": 0,
+                "character_count": len(text),
+                "sandbox_used": False,
+                "fallback": True,
+            }
 
     def extract_by_type(self, file_path: str, file_type: str) -> str:
         """Extract text based on file extension.

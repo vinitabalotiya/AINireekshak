@@ -37,4 +37,18 @@ async def init_db() -> None:
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Safely migrate new columns in SQLite development mode
+        if settings.DATABASE_URL.startswith("sqlite"):
+            from sqlalchemy import text
+            for col_sql in [
+                "ALTER TABLE sessions ADD COLUMN liveness_flag VARCHAR(50) DEFAULT 'PENDING'",
+                "ALTER TABLE sessions ADD COLUMN liveness_data JSON",
+                "ALTER TABLE sessions ADD COLUMN behavioural_data JSON",
+                "ALTER TABLE events ADD COLUMN liveness_settings JSON",
+                "ALTER TABLE events ADD COLUMN behaviour_settings JSON",
+            ]:
+                try:
+                    await conn.execute(text(col_sql))
+                except Exception:
+                    pass
     logger.info("Database tables created successfully.")

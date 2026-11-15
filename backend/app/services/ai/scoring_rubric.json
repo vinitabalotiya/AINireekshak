@@ -1,0 +1,78 @@
+{
+  "name": "Hackathon Final Scorecard Rubric",
+  "version": "2.0.0",
+  "description": "Standardized evaluation rubric for hackathon technical projects, interactive pitches, and slide decks.",
+  "scale": {
+    "min": 0.0,
+    "max": 10.0
+  },
+  "score_bands": [
+    {"band": "0-2", "label": "Inadequate / Unsatisfactory"},
+    {"band": "3-4", "label": "Basic / Developing"},
+    {"band": "5-6", "label": "Competent / Satisfactory"},
+    {"band": "7-8", "label": "Strong / High Quality"},
+    {"band": "9-10", "label": "Exceptional / Outstanding"}
+  ],
+  "criteria": {
+    "Innovation": {
+      "key": "innovation",
+      "weight": 20.0,
+      "description": "Novelty, creative problem solving, uniqueness, and differentiation from existing solutions.",
+      "score_bands": {
+        "0-2": "Derivative clone or direct copy of existing tutorials/templates; zero novel contribution or creative problem solving.",
+        "3-4": "Minor cosmetic modification of standard open-source templates; minimal originality, creativity, or differentiation.",
+        "5-6": "Moderate creativity; sensible application of established tools to a relevant problem with demonstrable adaptation.",
+        "7-8": "Strong novelty; distinct architecture, creative combination of technologies, or fresh angle solving real friction.",
+        "9-10": "Groundbreaking paradigm or pioneering technical invention; exceptional novelty with breakthrough or patentable potential."
+      }
+    },
+    "Technical Depth": {
+      "key": "technical_depth",
+      "weight": 20.0,
+      "description": "Architectural rigor, engineering complexity, data modeling, backend robustness, and implementation quality.",
+      "score_bands": {
+        "0-2": "Trivial or non-functional mockups; no working logic, backend, database schema, or algorithmic understanding.",
+        "3-4": "Superficial implementation; basic API wrapper or simplistic CRUD lacking error handling, schema design, or persistence.",
+        "5-6": "Solid baseline engineering; functional full-stack architecture, working DB integration, and standard error handling.",
+        "7-8": "Advanced engineering rigor; robust asynchronous processing, microservice/event patterns, database indexing, and security boundaries.",
+        "9-10": "Exceptional technical mastery; distributed systems design, sub-millisecond edge latency profiling, custom algorithms, and fault tolerance."
+      }
+    },
+    "Feasibility": {
+      "key": "feasibility",
+      "weight": 20.0,
+      "description": "Practical implementability, deployment viability, operational constraints, and economic/resource realism.",
+      "score_bands": {
+        "0-2": "Physically, mathematically, or economically unviable; ignores regulatory, infrastructure, or prohibitive compute barriers.",
+        "3-4": "Significant practical hurdles; relies on unavailable hardware, unscalable APIs, or prohibitive ongoing operational costs.",
+        "5-6": "Plausible deployment; standard cloud/edge architecture achievable with reasonable headcount and budget.",
+        "7-8": "Highly viable; realistic tech stack, pragmatic resource footprint, clear deployment pathway, and sensible unit economics.",
+        "9-10": "Production-ready blueprint; turnkey deployment, highly cost-effective, fully scalable, and compliant with enterprise standards."
+      }
+    },
+    "Presentation": {
+      "key": "presentation",
+      "weight": 20.0,
+      "description": "Verbal pitch clarity, slide structure, visual communication, technical explanation, and defense during cross-examination.",
+      "score_bands": {
+        "0-2": "Incoherent, incomplete, or absent pitch; unreadable or missing slides; unable to explain basic project concepts.",
+        "3-4": "Disorganized delivery; cluttered slides, rambling speech, and significant difficulty addressing technical questions.",
+        "5-6": "Clear and understandable communication; coherent slide structure explaining problem, solution, and architecture adequately.",
+        "7-8": "Engaging, articulate presentation; polished diagrams, concise technical articulation, and confident handling of Q&A.",
+        "9-10": "Masterclass technical storytelling; compelling narrative, precise architectural diagrams, seamless timing, and authoritative Q&A defense."
+      }
+    },
+    "Impact": {
+      "key": "impact",
+      "weight": 20.0,
+      "description": "Problem relevance, addressable audience scale, societal/economic value proposition, and measurable benefit to users.",
+      "score_bands": {
+        "0-2": "Negligible value proposition; solves an imaginary problem with no identifiable users or beneficial impact.",
+        "3-4": "Niche or trivial utility; tiny target audience with low adoption likelihood or easily replaced by minor manual tweaks.",
+        "5-6": "Meaningful localized impact; genuinely solves a documented pain point for a distinct user group or market segment.",
+        "7-8": "High measurable impact; clear economic or societal return on investment with substantial addressable user base.",
+        "9-10": "Transformative societal or industry-wide impact; massive addressable population and profound, measurable positive outcomes."
+      }
+    }
+  }
+}

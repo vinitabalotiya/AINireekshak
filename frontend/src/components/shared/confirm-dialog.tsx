@@ -34,28 +34,31 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-slate-900 border-slate-800 text-slate-100">
+      <DialogContent className="sm:max-w-[425px] bg-zinc-950 border border-white/10 text-white rounded-lg">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription className="text-slate-400">{description}</DialogDescription>
+          <DialogTitle className="text-white">{title}</DialogTitle>
+          <DialogDescription className="text-zinc-400">{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0 mt-4">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="border-slate-700 hover:bg-slate-800 text-slate-300"
+            className="border-white/15 hover:border-white/30 text-zinc-300 bg-transparent rounded"
           >
             {cancelLabel}
           </Button>
           <Button
             type="button"
-            variant={variant === "destructive" ? "destructive" : "default"}
             onClick={() => {
               onConfirm();
               onOpenChange(false);
             }}
-            className={variant === "destructive" ? "bg-rose-600 hover:bg-rose-500" : "bg-blue-600 hover:bg-blue-500"}
+            className={`rounded ${
+              variant === "destructive"
+                ? "bg-red-600 hover:bg-red-700 text-white"
+                : "bg-red-600 hover:bg-red-700 text-white"
+            }`}
           >
             {confirmLabel}
           </Button>

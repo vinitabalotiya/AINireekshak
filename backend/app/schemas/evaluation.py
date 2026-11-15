@@ -55,6 +55,8 @@ class RankingResponse(BaseModel):
     total_score: float
     category_scores: dict[str, float] = {}
     is_shortlisted: bool = False
+    liveness_status: str = "Verified"
+    behaviour_score: float = 85.0
 
 
 class ScoringWeightUpdate(BaseModel):

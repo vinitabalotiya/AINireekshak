@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_admin, get_db
+from app.core.dependencies import get_current_admin, get_current_team_or_admin, get_db
 from app.models.admin import AdminUser
 from app.models.session import Session
 from app.models.team import Team
@@ -32,19 +32,25 @@ async def list_sessions(
     status_filter: str | None = Query(None, alias="status"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
-    admin: AdminUser = Depends(get_current_admin),
+    user: dict = Depends(get_current_team_or_admin),
     db: AsyncSession = Depends(get_db),
 ) -> SessionListResponse:
-    """List sessions with filters."""
+    """List sessions with filters and team isolation."""
     query = select(Session)
     count_query = select(func.count()).select_from(Session)
+
+    if user["role"] == "team":
+        # Force team isolation: team can only view its own sessions
+        query = query.where(Session.team_id == user["id"])
+        count_query = count_query.where(Session.team_id == user["id"])
+    else:
+        if team_id is not None:
+            query = query.where(Session.team_id == team_id)
+            count_query = count_query.where(Session.team_id == team_id)
 
     if event_id is not None:
         query = query.where(Session.event_id == event_id)
         count_query = count_query.where(Session.event_id == event_id)
-    if team_id is not None:
-        query = query.where(Session.team_id == team_id)
-        count_query = count_query.where(Session.team_id == team_id)
     if status_filter:
         query = query.where(Session.status == status_filter)
         count_query = count_query.where(Session.status == status_filter)
@@ -98,7 +104,7 @@ async def create_session(
 @router.get("/{session_id}", response_model=SessionResponse)
 async def get_session(
     session_id: int,
-    admin: AdminUser = Depends(get_current_admin),
+    user: dict = Depends(get_current_team_or_admin),
     db: AsyncSession = Depends(get_db),
 ) -> SessionResponse:
     """Get session details."""
@@ -106,6 +112,8 @@ async def get_session(
     session = result.scalar_one_or_none()
     if session is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    if user["role"] == "team" and session.team_id != user["id"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access other teams' sessions")
     return SessionResponse.model_validate(session)
 
 
@@ -113,7 +121,7 @@ async def get_session(
 async def update_session_status(
     session_id: int,
     body: SessionUpdate,
-    admin: AdminUser = Depends(get_current_admin),
+    user: dict = Depends(get_current_team_or_admin),
     db: AsyncSession = Depends(get_db),
 ) -> SessionResponse:
     """Update session status and related fields."""
@@ -121,6 +129,8 @@ async def update_session_status(
     session = result.scalar_one_or_none()
     if session is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    if user["role"] == "team" and session.team_id != user["id"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot modify other teams' sessions")
 
     update_data = body.model_dump(exclude_unset=True)
 
@@ -143,10 +153,17 @@ async def update_session_status(
 @router.get("/{session_id}/transcript")
 async def get_session_transcript(
     session_id: int,
-    admin: AdminUser = Depends(get_current_admin),
+    user: dict = Depends(get_current_team_or_admin),
     db: AsyncSession = Depends(get_db),
 ) -> list[dict]:
     """Get the full transcript for a session."""
+    session_res = await db.execute(select(Session).where(Session.id == session_id))
+    session = session_res.scalar_one_or_none()
+    if session is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    if user["role"] == "team" and session.team_id != user["id"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access other teams' transcripts")
+
     result = await db.execute(
         select(Transcript)
         .where(Transcript.session_id == session_id)

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_admin, get_db
+from app.core.dependencies import get_current_admin, get_current_team_or_admin, get_db
 from app.core.security import generate_team_access_code
 from app.models.admin import AdminUser
 from app.models.event import Event
@@ -174,10 +174,12 @@ async def import_teams(
 @router.get("/{team_id}", response_model=TeamResponse)
 async def get_team(
     team_id: int,
-    admin: AdminUser = Depends(get_current_admin),
+    user: dict = Depends(get_current_team_or_admin),
     db: AsyncSession = Depends(get_db),
 ) -> TeamResponse:
     """Get a single team by ID."""
+    if user["role"] == "team" and user["id"] != team_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access other teams' details")
     result = await db.execute(select(Team).where(Team.id == team_id))
     team = result.scalar_one_or_none()
     if team is None:

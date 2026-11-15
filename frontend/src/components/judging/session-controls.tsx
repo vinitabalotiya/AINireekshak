@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, Video, VideoOff, PhoneOff, HelpCircle, Clock, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -10,29 +10,55 @@ interface SessionControlsProps {
   isConnected?: boolean;
   onRequestQuestion?: () => void;
   onEndSession?: () => void;
+  onTimeUp?: () => void;
   onToggleMic?: (enabled: boolean) => void;
   onToggleCamera?: (enabled: boolean) => void;
+  onFlipCamera?: () => void;
+  isFlipped?: boolean;
+  isQuestionDisabled?: boolean;
+  questionDisabledReason?: string;
 }
 
 export function SessionControls({
-  initialDurationMinutes = 15,
+  initialDurationMinutes = 3,
   isConnected = true,
   onRequestQuestion,
   onEndSession,
+  onTimeUp,
   onToggleMic,
   onToggleCamera,
+  onFlipCamera,
+  isFlipped = false,
+  isQuestionDisabled = false,
+  questionDisabledReason,
 }: SessionControlsProps) {
   const [micEnabled, setMicEnabled] = useState(true);
   const [cameraEnabled, setCameraEnabled] = useState(true);
   const [secondsRemaining, setSecondsRemaining] = useState(initialDurationMinutes * 60);
   const [showEndDialog, setShowEndDialog] = useState(false);
+  const hasTriggeredTimeUpRef = useRef(false);
+
+  useEffect(() => {
+    setSecondsRemaining(initialDurationMinutes * 60);
+    hasTriggeredTimeUpRef.current = false;
+  }, [initialDurationMinutes]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setSecondsRemaining((prev) => (prev > 0 ? prev - 1 : 0));
+      setSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          if (!hasTriggeredTimeUpRef.current) {
+            hasTriggeredTimeUpRef.current = true;
+            onTimeUp?.();
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [onTimeUp]);
 
   const formatTimer = (totalSec: number) => {
     const mins = Math.floor(totalSec / 60);
@@ -54,25 +80,27 @@ export function SessionControls({
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5 bg-slate-950/80 border border-slate-800 rounded-xl backdrop-blur-md">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 bg-zinc-950 border border-white/10 rounded">
         {/* Left: Connection status and Session timer */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800">
-            <Wifi className={`size-4 ${isConnected ? "text-emerald-400" : "text-rose-400"}`} />
-            <span className="text-xs font-medium text-slate-300">
-              {isConnected ? "Room Live" : "Reconnecting"}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-black border border-white/10">
+            <span className={`size-1.5 rounded-full ${isConnected ? "bg-red-500 animate-pulse" : "bg-zinc-600"}`} />
+            <span className="text-xs font-mono font-medium text-zinc-300">
+              {isConnected ? "STAGE LIVE" : "OFFLINE"}
             </span>
           </div>
 
           <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-sm font-semibold ${
-              secondsRemaining < 180
-                ? "bg-rose-500/10 text-rose-400 border-rose-500/30 animate-pulse"
-                : "bg-slate-900 text-slate-200 border-slate-800"
+            className={`flex items-center gap-2 px-2.5 py-1 rounded border font-mono text-xs font-semibold ${
+              secondsRemaining === 0
+                ? "bg-red-600 text-white border-red-600 animate-pulse"
+                : secondsRemaining < 60
+                ? "bg-red-600/10 text-red-500 border-red-600/40 animate-pulse"
+                : "bg-black text-white border-white/10"
             }`}
           >
-            <Clock className="size-4 text-slate-400" />
-            <span>{formatTimer(secondsRemaining)}</span>
+            <Clock className="size-3.5 text-zinc-400" />
+            <span>{secondsRemaining === 0 ? "00:00 (TIME UP)" : formatTimer(secondsRemaining)}</span>
           </div>
         </div>
 
@@ -84,14 +112,14 @@ export function SessionControls({
             size="sm"
             variant="outline"
             onClick={handleMicToggle}
-            className={`h-9 px-3 border transition-colors ${
+            className={`h-8 px-3 border transition-colors rounded text-xs font-mono ${
               micEnabled
-                ? "bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-100"
-                : "bg-rose-500/20 hover:bg-rose-500/30 border-rose-500/40 text-rose-300"
+                ? "bg-black hover:bg-zinc-900 border-white/15 text-white"
+                : "bg-red-600/10 hover:bg-red-600/20 border-red-600/40 text-red-400"
             }`}
           >
-            {micEnabled ? <Mic className="size-4 mr-1.5 text-emerald-400" /> : <MicOff className="size-4 mr-1.5 text-rose-400" />}
-            <span className="text-xs">{micEnabled ? "Mute" : "Unmute"}</span>
+            {micEnabled ? <Mic className="size-3.5 mr-1.5 text-zinc-300" /> : <MicOff className="size-3.5 mr-1.5 text-red-500" />}
+            <span>{micEnabled ? "Mute" : "Unmute"}</span>
           </Button>
 
           {/* Camera */}
@@ -100,15 +128,29 @@ export function SessionControls({
             size="sm"
             variant="outline"
             onClick={handleCameraToggle}
-            className={`h-9 px-3 border transition-colors ${
+            className={`h-8 px-3 border transition-colors rounded text-xs font-mono ${
               cameraEnabled
-                ? "bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-100"
-                : "bg-rose-500/20 hover:bg-rose-500/30 border-rose-500/40 text-rose-300"
+                ? "bg-black hover:bg-zinc-900 border-white/15 text-white"
+                : "bg-red-600/10 hover:bg-red-600/20 border-red-600/40 text-red-400"
             }`}
           >
-            {cameraEnabled ? <Video className="size-4 mr-1.5 text-blue-400" /> : <VideoOff className="size-4 mr-1.5 text-rose-400" />}
-            <span className="text-xs">{cameraEnabled ? "Stop Cam" : "Start Cam"}</span>
+            {cameraEnabled ? <Video className="size-3.5 mr-1.5 text-zinc-300" /> : <VideoOff className="size-3.5 mr-1.5 text-red-500" />}
+            <span>{cameraEnabled ? "Stop Cam" : "Start Cam"}</span>
           </Button>
+
+          {/* Flip / Normal Camera Orientation */}
+          {cameraEnabled && onFlipCamera && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onFlipCamera}
+              title={isFlipped ? "Switch camera to Normal View (Unmirrored)" : "Switch camera to Mirrored View"}
+              className="h-8 px-2.5 bg-black hover:bg-zinc-900 border-white/15 text-zinc-300 text-xs rounded"
+            >
+              <span className="text-[11px] font-mono">{isFlipped ? "Mirrored" : "Normal"}</span>
+            </Button>
+          )}
 
           {/* Request Follow-up Question from AI */}
           {onRequestQuestion && (
@@ -116,9 +158,15 @@ export function SessionControls({
               type="button"
               size="sm"
               onClick={onRequestQuestion}
-              className="h-9 px-3 bg-violet-600 hover:bg-violet-500 text-white font-medium text-xs shadow-md"
+              disabled={isQuestionDisabled}
+              title={questionDisabledReason || "Ask Next Question"}
+              className={`h-8 px-3 font-medium text-xs font-mono rounded transition-all ${
+                isQuestionDisabled
+                  ? "bg-zinc-900 text-zinc-600 border border-white/5 cursor-not-allowed opacity-50"
+                  : "bg-red-600 hover:bg-red-700 text-white"
+              }`}
             >
-              <HelpCircle className="size-4 mr-1.5" />
+              <HelpCircle className="size-3.5 mr-1.5" />
               Ask Next Question
             </Button>
           )}
@@ -131,9 +179,9 @@ export function SessionControls({
             size="sm"
             variant="destructive"
             onClick={() => setShowEndDialog(true)}
-            className="h-9 px-3.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium"
+            className="h-8 px-3.5 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-medium rounded transition-all"
           >
-            <PhoneOff className="size-4 mr-1.5" />
+            <PhoneOff className="size-3.5 mr-1.5" />
             End Session
           </Button>
         </div>

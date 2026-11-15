@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """In-memory rate limiter per IP address for sensitive API routes (e.g. auth)."""
 
-    def __init__(self, app, max_requests: int = 60, window_seconds: int = 60) -> None:
+    def __init__(self, app, max_requests: int = 1000, window_seconds: int = 60) -> None:
         super().__init__(app)
         self.max_requests = max_requests
         self.window_seconds = window_seconds

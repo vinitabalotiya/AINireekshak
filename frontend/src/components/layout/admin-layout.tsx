@@ -19,14 +19,14 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-950">
+      <div className="flex h-screen items-center justify-center bg-black">
         <LoadingSpinner message="Authenticating Administrator..." size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-black text-white flex flex-col font-sans">
       <Navbar />
       <div className="flex flex-1">
         <Sidebar />

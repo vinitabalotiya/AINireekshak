@@ -30,16 +30,16 @@ class ApiClient {
       (response) => response,
       (error: AxiosError) => {
         if (error.response?.status === 401 && typeof window !== "undefined") {
-          // If unauthenticated on a protected page, clean up token
           const path = window.location.pathname;
-          if (path.startsWith("/admin") && path !== "/admin/login") {
-            localStorage.removeItem("ainireekshak_token");
-            localStorage.removeItem("ainireekshak_role");
-            window.location.href = "/admin/login";
-          } else if (path.startsWith("/team") && path !== "/team/login") {
-            localStorage.removeItem("ainireekshak_token");
-            localStorage.removeItem("ainireekshak_role");
-            window.location.href = "/team/login";
+          const isLoginPage = path.endsWith("/login");
+          const hasToken = localStorage.getItem("ainireekshak_token");
+          // Only redirect if there is genuinely no authentication token stored
+          if (!hasToken && !isLoginPage) {
+            if (path.startsWith("/admin")) {
+              window.location.href = "/admin/login";
+            } else if (path.startsWith("/team")) {
+              window.location.href = "/team/login";
+            }
           }
         }
         return Promise.reject(error);
@@ -77,7 +77,7 @@ class ApiClient {
   // --- Events ---
   async getEvents() {
     const res = await this.client.get("/api/events");
-    return res.data;
+    return res.data?.items ?? (Array.isArray(res.data) ? res.data : []);
   }
 
   async getEvent(id: string | number) {
@@ -109,7 +109,7 @@ class ApiClient {
   async getTeams(eventId?: string | number) {
     const url = eventId ? `/api/teams?event_id=${eventId}` : "/api/teams";
     const res = await this.client.get(url);
-    return res.data;
+    return res.data?.items ?? (Array.isArray(res.data) ? res.data : []);
   }
 
   async getTeam(id: string | number) {
@@ -147,7 +147,7 @@ class ApiClient {
     if (filters?.event_id) params.append("event_id", String(filters.event_id));
     if (filters?.status) params.append("status", filters.status);
     const res = await this.client.get(`/api/sessions?${params.toString()}`);
-    return res.data;
+    return res.data?.items ?? (Array.isArray(res.data) ? res.data : []);
   }
 
   async getSession(id: string | number) {
@@ -185,11 +185,16 @@ class ApiClient {
 
   async getTeamSubmissions(teamId: string | number) {
     const res = await this.client.get(`/api/submissions/team/${teamId}`);
-    return res.data;
+    return res.data?.items ?? (Array.isArray(res.data) ? res.data : []);
   }
 
   async analyzeSubmission(id: string | number) {
     const res = await this.client.post(`/api/submissions/${id}/analyze`);
+    return res.data;
+  }
+
+  async deleteSubmission(id: string | number) {
+    const res = await this.client.delete(`/api/submissions/${id}`);
     return res.data;
   }
 
@@ -201,7 +206,7 @@ class ApiClient {
 
   async getTeamEvaluations(teamId: string | number) {
     const res = await this.client.get(`/api/evaluations/team/${teamId}`);
-    return res.data;
+    return res.data?.items ?? (Array.isArray(res.data) ? res.data : []);
   }
 
   async generateEvaluation(sessionId: string | number) {
@@ -211,7 +216,7 @@ class ApiClient {
 
   async getRankings(eventId: string | number) {
     const res = await this.client.get(`/api/evaluations/rankings/${eventId}`);
-    return res.data;
+    return res.data?.items ?? (Array.isArray(res.data) ? res.data : []);
   }
 
   async shortlistTeams(eventId: string | number, topN: number) {
@@ -228,9 +233,24 @@ class ApiClient {
     return `${API_URL}/api/reports/event/${eventId}/export/excel`;
   }
 
-  // --- Health ---
+  // --- Health & AI Settings ---
   async checkHealth() {
     const res = await this.client.get("/api/health");
+    return res.data;
+  }
+
+  async getAIKeySettings() {
+    const res = await this.client.get("/api/admin/settings/ai-keys");
+    return res.data;
+  }
+
+  async updateAIKeys(data: { gemini_api_key?: string; openai_api_key?: string }) {
+    const res = await this.client.post("/api/admin/settings/ai-keys", data);
+    return res.data;
+  }
+
+  async testAIKey(data: { provider: string; api_key?: string }) {
+    const res = await this.client.post("/api/admin/settings/ai-keys/test", data);
     return res.data;
   }
 }

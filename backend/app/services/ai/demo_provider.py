@@ -22,17 +22,62 @@ class DemoProvider(AIProvider):
         }
 
     async def generate_questions(self, context: dict) -> list[str]:
-        """Return demo judging questions."""
-        questions = [
-            "[DEMO MODE] Can you explain the core algorithm behind your solution and its time complexity?",
-            "[DEMO MODE] How does your system handle edge cases and error scenarios?",
-            "[DEMO MODE] What differentiates your approach from existing solutions in the market?",
-            "[DEMO MODE] How would you scale this solution to handle 10x the current load?",
-            "[DEMO MODE] What security measures have you implemented to protect user data?",
-            "[DEMO MODE] Can you walk us through a typical user journey in your application?",
-            "[DEMO MODE] What was the biggest technical challenge you faced and how did you overcome it?",
-        ]
-        return random.sample(questions, min(5, len(questions)))
+        """Return judging questions tailored to the PPT presentation analysis and pitch context."""
+        ppt_analysis = context.get("ppt_analysis") or {}
+        extracted_text = context.get("extracted_text") or ""
+        pitch = context.get("pitch") or ""
+        lang = context.get("language") or "en"
+
+        # Extract metadata from PPT analysis
+        problem = ppt_analysis.get("problem_statement", "")
+        solution = ppt_analysis.get("solution", "")
+        architecture = ppt_analysis.get("architecture", "")
+        tech_stack = ppt_analysis.get("tech_stack", [])
+        if isinstance(tech_stack, list) and tech_stack:
+            tech_stack_str = ", ".join(tech_stack[:4])
+        else:
+            tech_stack_str = str(tech_stack) if tech_stack else "Python & modern frameworks"
+
+        # Clean demo tags if present
+        tech_stack_str = tech_stack_str.replace("[DEMO MODE]", "").strip()
+
+        questions = []
+
+        if lang == "hi":
+            if tech_stack_str:
+                questions.append(f"आपके प्रेजेंटेशन डेक के अनुसार आपने {tech_stack_str} का उपयोग किया है। हाई लोड और डेटा कंसिस्टेंसी बनाए रखने के लिए आपका आर्किटेक्चर इसे कैसे संभालता है?")
+            if architecture:
+                questions.append("आपके प्रेजेंटेशन में दिखाए गए सिस्टम आर्किटेक्चर में अगर प्राइमरी बैकएंड सर्विस फेल हो जाए तो आपकी फॉलबैक या रिकवरी रणनीति क्या है?")
+            if problem:
+                questions.append("प्रोजेक्ट में चिन्हित मुख्य समस्या को हल करते समय आपको कौन सी सबसे बड़ी तकनीकी चुनौती का सामना करना पड़ा?")
+            questions.extend([
+                "आपके सिस्टम में यूजर डेटा सिक्योरिटी, रेट लिमिटिंग और ऑथेंटिकेशन का क्या फ्लो लागू किया गया है?",
+                "क्या आपने नेटवर्क डिस्कनेक्शन या ऑफलाइन मोड के दौरान स्टेट सिंक और डेटा रिकवरी की कोई व्यवस्था की है?"
+            ])
+        elif lang == "hinglish":
+            if tech_stack_str:
+                questions.append(f"Aapke PPT deck ke according aapne {tech_stack_str} use kiya hai. High concurrency aur scale par data consistency kaise ensure hoti hai?")
+            if architecture:
+                questions.append("Presentation me bataye gaye system architecture me single point of failure ya edge network drops ko kaise handle kiya gaya hai?")
+            if problem:
+                questions.append("Is project ke core problem statement ko solve karte waqt implementation level par sabse bada technical challenge kya tha?")
+            questions.extend([
+                "API authentication, rate-limiting aur backend security guardrails ko aapne kaise protect kiya hai?",
+                "Offline data reconciliation aur background async processing ke liye kaun sa design pattern use kiya gaya hai?"
+            ])
+        else:  # en
+            if tech_stack_str:
+                questions.append(f"In your presentation deck, you highlighted using {tech_stack_str}. How does your architecture maintain low latency and data consistency under concurrent load?")
+            if architecture:
+                questions.append("Reviewing the architecture in your presentation slides, what failover strategy is implemented if a critical downstream dependency becomes unavailable?")
+            if problem:
+                questions.append("Addressing the core problem outlined in your deck, what was the most complex technical trade-off you had to navigate during implementation?")
+            questions.extend([
+                "What security mechanisms, API rate limiting, and access control boundaries are enforced across your application layer?",
+                "How does your solution handle offline state reconciliation, network dropouts, and transaction rollback edge cases?"
+            ])
+
+        return questions[:5]
 
     async def evaluate_response(self, question: str, answer: str, context: dict) -> dict:
         """Return a demo response evaluation."""
@@ -52,49 +97,9 @@ class DemoProvider(AIProvider):
         }
 
     async def generate_evaluation(self, session_data: dict) -> dict:
-        """Return a demo full evaluation."""
-        categories = {
-            "innovation": {
-                "score": random.randint(65, 95),
-                "justification": "[DEMO MODE] The project shows creative thinking in applying AI to solve the identified problem.",
-                "evidence": ["Novel approach to data processing", "Creative UI/UX design choices"],
-            },
-            "technical_complexity": {
-                "score": random.randint(60, 90),
-                "justification": "[DEMO MODE] Solid technical implementation with appropriate use of modern frameworks.",
-                "evidence": ["Well-structured codebase", "Appropriate use of design patterns"],
-            },
-            "feasibility": {
-                "score": random.randint(70, 95),
-                "justification": "[DEMO MODE] The solution is practical and could be deployed with reasonable effort.",
-                "evidence": ["Realistic technology choices", "Clear deployment strategy"],
-            },
-            "presentation": {
-                "score": random.randint(65, 90),
-                "justification": "[DEMO MODE] The team communicated their ideas effectively during the session.",
-                "evidence": ["Clear problem statement", "Well-organized demo"],
-            },
-            "qa_responses": {
-                "score": random.randint(60, 85),
-                "justification": "[DEMO MODE] The team showed good understanding when answering follow-up questions.",
-                "evidence": ["Thoughtful responses", "Acknowledged limitations honestly"],
-            },
-            "code_quality": {
-                "score": random.randint(55, 90),
-                "justification": "[DEMO MODE] The codebase follows reasonable practices with room for improvement.",
-                "evidence": ["Consistent coding style", "Some test coverage present"],
-            },
-        }
-
-        team_name = session_data.get("team_name", "Unknown Team")
-        project_name = session_data.get("project_name", "Unknown Project")
-
-        return {
-            "mode": "[DEMO MODE]",
-            "summary": (
-                f"[DEMO MODE] Team '{team_name}' presented '{project_name}' which demonstrates a solid approach "
-                f"to solving the identified problem. The solution shows good technical depth and creative thinking. "
-                f"Areas for improvement include more comprehensive testing and edge case handling."
-            ),
-            "categories": categories,
-        }
+        """Return a demo full evaluation using the fixed rubric deterministically."""
+        from app.services.ai.gemini_scoring import evaluate_deterministically
+        scorecard = evaluate_deterministically(session_data)
+        res = scorecard.to_dict()
+        res["mode"] = "[DEMO MODE]"
+        return res

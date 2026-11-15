@@ -37,6 +37,9 @@ class SessionResponse(BaseModel):
     status: str
     duration_minutes: int | None = None
     livekit_room_name: str | None = None
+    liveness_flag: str = "PENDING"
+    liveness_data: dict | None = None
+    behavioural_data: dict | None = None
     created_at: datetime
     updated_at: datetime
 

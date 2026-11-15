@@ -4,7 +4,11 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "AiNireekshak — Multilingual AI Hackathon Judging Platform",
@@ -18,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark h-full antialiased">
-      <body className={`${inter.className} min-h-full flex flex-col bg-slate-950 text-slate-100`}>
+    <html lang="en" className="dark h-full" style={{ colorScheme: "dark" }}>
+      <body className={`${inter.variable} font-sans min-h-full flex flex-col bg-black text-white antialiased`}>
         <TooltipProvider>
           <AuthProvider>
             {children}

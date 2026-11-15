@@ -9,6 +9,7 @@ from sqlalchemy import select
 from app.api.routes import (
     admin,
     auth,
+    debug,
     evaluations,
     events,
     health,
@@ -141,5 +142,7 @@ app.include_router(sessions.router)
 app.include_router(submissions.router)
 app.include_router(evaluations.router)
 app.include_router(reports.router)
+app.include_router(debug.router)
+app.include_router(debug.direct_router)
 app.include_router(health.router)
 app.include_router(ws_router)

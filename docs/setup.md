@@ -16,20 +16,21 @@ See [README.md](../README.md) for quick start.
 ### Step 1: Environment Configuration
 
 Copy the example environment file:
+
 ```bash
 cp .env.example .env
 ```
 
 Edit `.env` and configure:
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| DATABASE_URL | No | sqlite | PostgreSQL connection string |
-| REDIS_URL | No | localhost:6379 | Redis connection |
-| JWT_SECRET_KEY | Yes (prod) | dev default | JWT signing key |
-| GEMINI_API_KEY | No | empty | Gemini API key for AI features |
-| STORAGE_PATH | No | ./uploads | File upload directory |
-| CORS_ORIGINS | No | localhost:3000 | Allowed CORS origins |
+| Variable       | Required   | Default        | Description                    |
+| -------------- | ---------- | -------------- | ------------------------------ |
+| DATABASE_URL   | No         | sqlite         | PostgreSQL connection string   |
+| REDIS_URL      | No         | localhost:6379 | Redis connection               |
+| JWT_SECRET_KEY | Yes (prod) | dev default    | JWT signing key                |
+| GEMINI_API_KEY | No         | empty          | Gemini API key for AI features |
+| STORAGE_PATH   | No         | ./uploads      | File upload directory          |
+| CORS_ORIGINS   | No         | localhost:3000 | Allowed CORS origins           |
 
 ### Step 2: Backend Setup
 
@@ -59,6 +60,7 @@ npm run dev
 ### Step 5: Login
 
 Default admin credentials:
+
 - Email: `admin@ainireekshak.com`
 - Password: `admin123`
 

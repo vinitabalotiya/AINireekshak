@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_admin, get_db
+from app.core.dependencies import get_current_admin, get_current_team_or_admin, get_db
 from app.models.admin import AdminUser
 from app.models.event import Event
 from app.models.session import Session
@@ -82,7 +82,7 @@ async def create_event(
 @router.get("/{event_id}", response_model=EventResponse)
 async def get_event(
     event_id: int,
-    admin: AdminUser = Depends(get_current_admin),
+    user: dict = Depends(get_current_team_or_admin),
     db: AsyncSession = Depends(get_db),
 ) -> EventResponse:
     """Get a single event by ID."""

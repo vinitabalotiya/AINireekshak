@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Sparkles, LogOut, User, Shield, Users, Radio } from "lucide-react";
+import { LogOut, Shield, Users, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -10,73 +10,76 @@ export function Navbar() {
   const { user, role, isAuthenticated, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
-      <div className="flex h-16 items-center justify-between px-6">
+    <header className="sticky top-0 z-40 w-full border-b border-white/8 bg-black/95 backdrop-blur-sm">
+      <div className="flex h-14 items-center justify-between px-6">
         {/* Brand */}
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="size-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-              <Sparkles className="size-5" />
+          <Link href="/" className="flex items-center gap-3 group">
+            {/* Sharp red square logo — not a generic circle */}
+            <div className="size-7 bg-red-600 flex items-center justify-center shrink-0">
+              <span className="text-white font-black text-xs tracking-tighter">AI</span>
             </div>
-            <div>
-              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-blue-300 bg-clip-text text-transparent">
+            <div className="flex items-baseline gap-2.5">
+              <span className="font-bold text-base tracking-tight text-white group-hover:text-zinc-200 transition-colors">
                 AiNireekshak
               </span>
-              <span className="hidden sm:inline-block ml-2 text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
-                Multilingual AI Judge
+              <span className="hidden sm:inline-block text-[9px] px-1.5 py-0.5 border border-red-600/40 text-red-500 font-semibold tracking-widest uppercase">
+                AI Judge
               </span>
             </div>
           </Link>
 
-          {/* Navigation for Logged In Portals */}
+          {/* Team navigation */}
           {isAuthenticated && role === "team" && (
-            <nav className="hidden md:flex items-center gap-1 ml-4 text-sm font-medium">
+            <nav className="hidden md:flex items-center gap-0.5 ml-2">
               <Link
                 href="/team/dashboard"
-                className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
+                className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white transition-colors relative group"
               >
                 Dashboard
+                <span className="absolute bottom-0 left-3 right-3 h-px bg-red-600 scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
               </Link>
               <Link
                 href="/team/submission"
-                className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
+                className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white transition-colors relative group"
               >
                 Submissions
+                <span className="absolute bottom-0 left-3 right-3 h-px bg-red-600 scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
               </Link>
               <Link
                 href="/team/session"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-blue-400 hover:text-blue-300 hover:bg-blue-950/40 border border-blue-800/40 transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-500 hover:text-red-400 border border-red-600/30 hover:border-red-500/50 hover:bg-red-600/5 transition-all"
               >
-                <Radio className="size-3.5 animate-pulse text-rose-400" />
+                <span className="dot-live" />
                 Live Judging Room
               </Link>
             </nav>
           )}
         </div>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-3">
+        {/* Right actions */}
+        <div className="flex items-center gap-2">
           {isAuthenticated ? (
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 border border-white/8 text-xs">
                 {role === "admin" ? (
-                  <Shield className="size-3.5 text-blue-400" />
+                  <Shield className="size-3 text-red-500" />
                 ) : (
-                  <Users className="size-3.5 text-emerald-400" />
+                  <Users className="size-3 text-zinc-400" />
                 )}
-                <span className="font-medium text-slate-200">
+                <span className="font-medium text-zinc-200">
                   {user?.team_name || user?.username || "Authenticated"}
                 </span>
-                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                  ({role})
+                <span className="text-[10px] uppercase tracking-widest text-zinc-600 font-semibold">
+                  {role}
                 </span>
               </div>
 
               <Button
                 size="sm"
-                variant="outline"
+                variant="ghost"
                 onClick={logout}
-                className="h-8 px-2.5 border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs"
+                className="h-7 px-2.5 text-zinc-500 hover:text-red-500 hover:bg-transparent text-xs transition-colors"
               >
                 <LogOut className="size-3.5 sm:mr-1.5" />
                 <span className="hidden sm:inline">Logout</span>
@@ -87,19 +90,18 @@ export function Navbar() {
               <Link href="/team/login">
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="h-8 border-slate-700 hover:bg-slate-900 text-slate-200 text-xs"
+                  className="h-7 bg-white hover:bg-zinc-200 text-black border border-white text-xs font-mono font-semibold transition-all rounded shadow-xs"
                 >
-                  <Users className="size-3.5 mr-1.5 text-emerald-400" />
+                  <Users className="size-3 mr-1.5 text-black" />
                   Team Login
                 </Button>
               </Link>
               <Link href="/admin/login">
                 <Button
                   size="sm"
-                  className="h-8 bg-blue-600 hover:bg-blue-500 text-white text-xs shadow-md shadow-blue-500/20"
+                  className="h-7 bg-red-600 hover:bg-red-700 text-white text-xs font-medium transition-colors rounded"
                 >
-                  <Shield className="size-3.5 mr-1.5" />
+                  <Shield className="size-3 mr-1.5" />
                   Admin Login
                 </Button>
               </Link>

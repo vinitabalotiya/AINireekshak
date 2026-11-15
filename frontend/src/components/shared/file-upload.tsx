@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { UploadCloud, FileText, CheckCircle2, AlertCircle } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { UploadCloud, CheckCircle2, AlertCircle } from "lucide-react";
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -14,7 +13,7 @@ interface FileUploadProps {
 export function FileUpload({
   onFileSelect,
   accept = ".pdf,.pptx,.ppt,.docx,.doc,.zip",
-  maxSizeMB = 100,
+  maxSizeMB = 10,
   label = "Upload Project Presentation or Source Code",
 }: FileUploadProps) {
   const [dragOver, setDragOver] = useState(false);
@@ -50,12 +49,12 @@ export function FileUpload({
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`relative flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
+        className={`relative flex flex-col items-center justify-center p-8 border border-dashed rounded cursor-pointer transition-all duration-200 ${
           dragOver
-            ? "border-blue-500 bg-blue-500/10"
+            ? "border-red-600 bg-red-600/5"
             : selectedFile
-            ? "border-emerald-500/50 bg-emerald-500/5"
-            : "border-slate-800 hover:border-slate-700 bg-slate-900/40 hover:bg-slate-900/60"
+            ? "border-white/30 bg-white/4"
+            : "border-white/10 hover:border-red-600/50 bg-black hover:bg-zinc-950"
         }`}
       >
         <input
@@ -71,29 +70,29 @@ export function FileUpload({
         />
 
         {selectedFile ? (
-          <div className="flex flex-col items-center text-center gap-2">
-            <div className="p-3 rounded-full bg-emerald-500/10 text-emerald-400">
-              <CheckCircle2 className="size-8" />
+          <div className="flex flex-col items-center text-center gap-2 font-mono">
+            <div className="p-2.5 rounded bg-white text-black">
+              <CheckCircle2 className="size-6" />
             </div>
             <div>
-              <p className="font-medium text-slate-100">{selectedFile.name}</p>
-              <p className="text-xs text-slate-400">
+              <p className="font-semibold text-white text-xs">{selectedFile.name}</p>
+              <p className="text-[10px] text-zinc-400 mt-0.5">
                 {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Click or drop to replace
               </p>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center text-center gap-2">
-            <div className="p-3 rounded-full bg-slate-800 text-blue-400">
-              <UploadCloud className="size-8" />
+          <div className="flex flex-col items-center text-center gap-2 font-mono">
+            <div className="p-2.5 rounded border border-white/10 bg-zinc-950 text-red-500">
+              <UploadCloud className="size-6" />
             </div>
             <div>
-              <p className="font-medium text-slate-200">{label}</p>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="font-medium text-white text-xs">{label}</p>
+              <p className="text-[11px] text-zinc-500 mt-1">
                 Drag and drop files here, or click to browse (up to {maxSizeMB} MB)
               </p>
             </div>
-            <p className="text-[11px] text-slate-500 mt-2 font-mono">
+            <p className="text-[10px] text-zinc-600 mt-1 uppercase tracking-wider">
               Accepted: PDF, PPTX, DOCX, ZIP source code
             </p>
           </div>
@@ -101,8 +100,8 @@ export function FileUpload({
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 mt-2 text-xs text-rose-400">
-          <AlertCircle className="size-4 shrink-0" />
+        <div className="mt-2 flex items-center gap-2 text-xs text-red-500 font-mono">
+          <AlertCircle className="size-3.5 shrink-0" />
           <span>{error}</span>
         </div>
       )}

@@ -18,14 +18,14 @@ export function TeamLayout({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-950">
+      <div className="flex h-screen items-center justify-center bg-black">
         <LoadingSpinner message="Authenticating Team..." size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-black text-white flex flex-col font-sans">
       <Navbar />
       <main className="flex-1 p-6 md:p-8 max-w-6xl mx-auto w-full">
         {children}

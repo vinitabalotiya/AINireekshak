@@ -20,14 +20,17 @@ export function EmptyState({
   icon,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-slate-800 bg-slate-900/40">
-      <div className="p-3 mb-4 rounded-full bg-slate-800/80 text-slate-400">
+    <div className="flex flex-col items-center justify-center p-14 text-center border border-dashed border-white/8 bg-zinc-950/40">
+      <div className="p-3 mb-5 border border-white/8 text-zinc-600">
         {icon || <FolderX className="size-8" />}
       </div>
-      <h3 className="text-lg font-semibold text-slate-200">{title}</h3>
-      <p className="max-w-sm mt-1 text-sm text-slate-400">{description}</p>
+      <h3 className="text-base font-semibold text-white tracking-tight">{title}</h3>
+      <p className="max-w-sm mt-2 text-sm text-zinc-500 leading-relaxed">{description}</p>
       {actionLabel && onAction && (
-        <Button onClick={onAction} className="mt-5 bg-blue-600 hover:bg-blue-500 text-white">
+        <Button
+          onClick={onAction}
+          className="mt-6 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded"
+        >
           {actionLabel}
         </Button>
       )}

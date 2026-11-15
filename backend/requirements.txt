@@ -21,4 +21,5 @@ python-docx
 openpyxl
 pytest
 pytest-asyncio
+maritime
 ruff

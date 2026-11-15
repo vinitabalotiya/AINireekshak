@@ -14,9 +14,65 @@ DEFAULT_WEIGHTS: dict[str, float] = {
     "problem_relevance": 5.0,
 }
 
+BEHAVIOURAL_PARAMETERS: list[str] = [
+    "eye_contact",
+    "attention",
+    "confidence",
+    "posture_stability",
+]
+
+
+def normalize_behaviour_score(raw: float) -> int:
+    """Normalize raw behavior score on 1-82 scale to standard 1-100 scale.
+    Formula: score100 = round(1 + (raw - 1) * 99 / 81), clamped to 1-100.
+    """
+    if raw is None:
+        return 50
+    try:
+        val = float(raw)
+    except (ValueError, TypeError):
+        return 50
+    # Clamping raw input to [1, 82] before normalization
+    clamped_raw = max(1.0, min(82.0, val))
+    score100 = round(1.0 + (clamped_raw - 1.0) * 99.0 / 81.0)
+    return max(1, min(100, int(score100)))
+
+
+def calculate_hybrid_weights(
+    content_weights: dict[str, float] | None = None,
+    behaviour_param_weight: float = 3.0,
+    behaviour_params: list[str] | None = None,
+) -> dict[str, float]:
+    """Calculate combined weights where each behavioral parameter contributes exactly
+    behaviour_param_weight (default 3.0%), and content weights are scaled proportionally
+    so the final sum is exactly 100.0%.
+    """
+    base_content = (content_weights or DEFAULT_WEIGHTS).copy()
+    params = behaviour_params or BEHAVIOURAL_PARAMETERS
+    total_behaviour_weight = len(params) * behaviour_param_weight
+    total_content_weight = sum(base_content.values()) or 100.0
+    scale_factor = max(0.0, (100.0 - total_behaviour_weight)) / total_content_weight
+
+    combined_weights: dict[str, float] = {}
+    for cat, w in base_content.items():
+        combined_weights[cat] = round(w * scale_factor, 4)
+
+    for p in params:
+        combined_weights[f"behaviour_{p}"] = float(behaviour_param_weight)
+
+    # Ensure precision adds up to exactly 100.0
+    diff = round(100.0 - sum(combined_weights.values()), 4)
+    if abs(diff) > 0.0001:
+        first_content = next(iter(base_content.keys()))
+        combined_weights[first_content] = round(combined_weights[first_content] + diff, 4)
+
+    return combined_weights
+
 
 class ScoringEngine:
     """Calculates weighted scores, validates criteria weights, and manages rankings."""
+
+    DEFAULT_WEIGHTS = DEFAULT_WEIGHTS
 
     def __init__(self, default_weights: dict[str, float] | None = None) -> None:
         self.default_weights = default_weights or DEFAULT_WEIGHTS.copy()

@@ -1,6 +1,10 @@
 """Application configuration using pydantic-settings."""
 
+from pathlib import Path
 from pydantic_settings import BaseSettings
+
+_app_dir = Path(__file__).resolve().parent.parent.parent  # backend root
+_repo_root = _app_dir.parent  # repository root
 
 
 class Settings(BaseSettings):
@@ -16,6 +20,10 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
 
+    MARITIME_API_KEY: str = ""
+    USE_SANDBOX_PARSER: bool = True
+    SANDBOX_TIMEOUT_SECONDS: int = 30
+
     LIVEKIT_URL: str = ""
     LIVEKIT_API_KEY: str = ""
     LIVEKIT_API_SECRET: str = ""
@@ -27,7 +35,11 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000"
 
     model_config = {
-        "env_file": ".env",
+        "env_file": [
+            str(_repo_root / ".env"),
+            str(_app_dir / ".env"),
+            ".env",
+        ],
         "env_file_encoding": "utf-8",
         "case_sensitive": True,
         "extra": "ignore",

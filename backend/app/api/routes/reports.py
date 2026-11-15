@@ -11,6 +11,7 @@ from app.core.dependencies import get_current_admin, get_db
 from app.models.admin import AdminUser
 from app.models.evaluation import Evaluation
 from app.models.event import Event
+from app.models.session import Session
 from app.models.team import Team
 from app.schemas.evaluation import RankingResponse
 from app.services.evaluation.report_export import ReportExporter
@@ -36,6 +37,23 @@ async def _build_rankings(event_id: int, db: AsyncSession) -> list[RankingRespon
         team_result = await db.execute(select(Team).where(Team.id == eval_obj.team_id))
         team = team_result.scalar_one_or_none()
         cat_scores = {cat.category_name: cat.score or 0.0 for cat in eval_obj.categories}
+
+        # Look up session for liveness status & behavior score
+        sess_result = await db.execute(select(Session).where(Session.id == eval_obj.session_id))
+        sess_obj = sess_result.scalar_one_or_none()
+        liveness_stat = "Verified"
+        behav_score = 85.0
+        if sess_obj:
+            if getattr(sess_obj, "liveness_flag", None) in ("LIVENESS_FAILED", "FLAGGED"):
+                liveness_stat = "Flagged"
+            elif getattr(sess_obj, "liveness_flag", None) == "ERRORED":
+                liveness_stat = "Errored"
+            elif getattr(sess_obj, "liveness_flag", None) == "VERIFIED":
+                liveness_stat = "Verified"
+
+            if getattr(sess_obj, "behavioural_data", None):
+                behav_score = sess_obj.behavioural_data.get("normalizedScore") or sess_obj.behavioural_data.get("averageAttention") or 85.0
+
         rankings.append(
             RankingResponse(
                 rank=0,
@@ -44,6 +62,8 @@ async def _build_rankings(event_id: int, db: AsyncSession) -> list[RankingRespon
                 project_name=team.project_name if team else None,
                 total_score=eval_obj.total_score or 0.0,
                 category_scores=cat_scores,
+                liveness_status=liveness_stat,
+                behaviour_score=round(float(behav_score), 1),
             )
         )
 

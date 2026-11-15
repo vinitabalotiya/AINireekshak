@@ -83,3 +83,42 @@ async def get_current_team(
     if team is None or not team.is_active:
         raise credentials_exception
     return team
+
+
+async def get_current_team_or_admin(
+    authorization: str = Header(..., description="Bearer <token>"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Validate JWT for either admin or team role and return identity dict."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or expired credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        scheme, _, token = authorization.partition(" ")
+        if scheme.lower() != "bearer" or not token:
+            raise credentials_exception
+        payload = verify_token(token)
+        role = payload.get("role")
+        user_id = payload.get("sub")
+        if not role or user_id is None:
+            raise credentials_exception
+
+        if role == "admin":
+            res = await db.execute(select(AdminUser).where(AdminUser.id == int(user_id)))
+            admin = res.scalar_one_or_none()
+            if not admin or not admin.is_active:
+                raise credentials_exception
+            return {"role": "admin", "id": admin.id, "obj": admin}
+
+        elif role == "team":
+            res = await db.execute(select(Team).where(Team.id == int(user_id)))
+            team = res.scalar_one_or_none()
+            if not team or not team.is_active:
+                raise credentials_exception
+            return {"role": "team", "id": team.id, "obj": team}
+
+        raise credentials_exception
+    except jwt.PyJWTError:
+        raise credentials_exception

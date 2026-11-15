@@ -48,3 +48,36 @@ def test_calculate_rankings_with_ties():
 
     assert ranked[3]["team_name"] == "Team D"
     assert ranked[3]["rank"] == 4
+
+
+def test_normalize_behaviour_score():
+    from app.services.evaluation.scoring import normalize_behaviour_score
+
+    # raw 1 -> 1
+    assert normalize_behaviour_score(1) == 1
+    # raw 82 -> 100
+    assert normalize_behaviour_score(82) == 100
+    # raw 41 -> ~50 (round(1 + 40*99/81) = round(49.88) = 50)
+    assert normalize_behaviour_score(41) == 50
+    # out of range inputs clamped
+    assert normalize_behaviour_score(-10) == 1
+    assert normalize_behaviour_score(120) == 100
+    assert normalize_behaviour_score(0) == 1
+    assert normalize_behaviour_score(83) == 100
+
+
+def test_hybrid_behaviour_weight_sums_to_100():
+    from app.services.evaluation.scoring import calculate_hybrid_weights, ScoringEngine
+
+    # 4 behavioral parameters at 3% each = 12% total
+    hybrid = calculate_hybrid_weights(behaviour_param_weight=3.0)
+    assert abs(sum(hybrid.values()) - 100.0) < 0.01
+
+    # Check each parameter has exactly 3.0%
+    assert hybrid["behaviour_eye_contact"] == 3.0
+    assert hybrid["behaviour_attention"] == 3.0
+    assert hybrid["behaviour_confidence"] == 3.0
+    assert hybrid["behaviour_posture_stability"] == 3.0
+
+    engine = ScoringEngine()
+    assert engine.validate_weights(hybrid) is True

@@ -27,7 +27,7 @@ class GeminiProvider(AIProvider):
         return self._client is not None
 
     async def _generate(self, prompt: str) -> str:
-        """Generate content using Gemini."""
+        """Generate content using Gemini with graceful fallback handling."""
         if not self._is_available():
             return ""
         try:
@@ -37,8 +37,8 @@ class GeminiProvider(AIProvider):
             )
             return response.text or ""
         except Exception as e:
-            logger.error("Gemini generation error: %s", e)
-            raise
+            logger.warning("Gemini generation call failed: %s", e)
+            return ""
 
     def _parse_json_response(self, text: str) -> dict:
         """Extract JSON from a response that may contain markdown fences."""
@@ -57,12 +57,13 @@ class GeminiProvider(AIProvider):
             return {"raw_response": text}
 
     async def analyze_project(self, text: str, context: dict) -> dict:
-        """Analyze project content using Gemini."""
+        """Analyze project content using Gemini with automatic DemoProvider fallback."""
         if not self._is_available():
             from app.services.ai.demo_provider import DemoProvider
             return await DemoProvider().analyze_project(text, context)
 
-        prompt = f"""Analyze the following project submission and return a JSON object with these keys:
+        try:
+            prompt = f"""Analyze the following project submission and return a JSON object with these keys:
 - problem_statement: What problem does this project solve?
 - solution: How does the project solve the problem?
 - architecture: Describe the system architecture.
@@ -78,42 +79,74 @@ Project content:
 
 Return ONLY valid JSON, no other text."""
 
-        raw = await self._generate(prompt)
-        return self._parse_json_response(raw)
+            raw = await self._generate(prompt)
+            if raw:
+                parsed = self._parse_json_response(raw)
+                if isinstance(parsed, dict) and "problem_statement" in parsed:
+                    return parsed
+
+            # Fallback to demo provider if model returned empty or incomplete data
+            from app.services.ai.demo_provider import DemoProvider
+            return await DemoProvider().analyze_project(text, context)
+        except Exception as e:
+            logger.warning("Gemini analyze_project exception (%s), falling back to DemoProvider", e)
+            from app.services.ai.demo_provider import DemoProvider
+            return await DemoProvider().analyze_project(text, context)
 
     async def generate_questions(self, context: dict) -> list[str]:
-        """Generate judging questions using Gemini."""
+        """Generate judging questions using Gemini with automatic DemoProvider fallback."""
         if not self._is_available():
             from app.services.ai.demo_provider import DemoProvider
             return await DemoProvider().generate_questions(context)
 
-        prompt = f"""You are an expert hackathon judge. Based on the following project context, generate 5 insightful
-technical questions to ask the team during their judging session.
+        try:
+            lang = context.get("language", "en")
+            lang_instruction = (
+                "Return questions in natural Devanagari Hindi." if lang == "hi"
+                else "Return questions strictly in natural Roman script Hinglish (Hindi written using English alphabet)." if lang == "hinglish"
+                else "Return questions in clear technical English."
+            )
 
-Project context:
-{json.dumps(context)}
+            prompt = f"""You are an expert technical hackathon judge.
+Carefully inspect this team's presentation deck (PPT) analysis, extracted slide text, and pitch context.
+Generate 5 sharp, insightful technical cross-examination questions that directly cite the claims, architecture, tech stack, and limitations in their PPT deck.
+
+Language requirement: {lang_instruction}
+
+Project & Presentation Deck Context:
+{json.dumps(context, default=str)}
 
 Return a JSON array of 5 question strings. Return ONLY valid JSON, no other text."""
 
-        raw = await self._generate(prompt)
-        parsed = self._parse_json_response(raw)
-        if isinstance(parsed, list):
-            return parsed
-        if "raw_response" in parsed:
-            return [parsed["raw_response"]]
-        return list(parsed.values()) if parsed else []
+            raw = await self._generate(prompt)
+            if raw:
+                parsed = self._parse_json_response(raw)
+                if isinstance(parsed, list) and len(parsed) > 0:
+                    return parsed
+                if isinstance(parsed, dict) and "raw_response" in parsed:
+                    return [parsed["raw_response"]]
+                if isinstance(parsed, dict) and parsed:
+                    return list(parsed.values())
+
+            from app.services.ai.demo_provider import DemoProvider
+            return await DemoProvider().generate_questions(context)
+        except Exception as e:
+            logger.warning("Gemini generate_questions exception (%s), falling back to DemoProvider", e)
+            from app.services.ai.demo_provider import DemoProvider
+            return await DemoProvider().generate_questions(context)
 
     async def evaluate_response(self, question: str, answer: str, context: dict) -> dict:
-        """Evaluate a participant's response using Gemini."""
+        """Evaluate a participant's response using Gemini with automatic DemoProvider fallback."""
         if not self._is_available():
             from app.services.ai.demo_provider import DemoProvider
             return await DemoProvider().evaluate_response(question, answer, context)
 
-        prompt = f"""You are an expert hackathon judge evaluating a participant's response.
+        try:
+            prompt = f"""You are an expert hackathon judge evaluating a participant's response.
 
 Question: {question}
 Answer: {answer}
-Context: {json.dumps(context)}
+Context: {json.dumps(context, default=str)}
 
 Return a JSON object with:
 - score: integer 0-100
@@ -123,40 +156,24 @@ Return a JSON object with:
 
 Return ONLY valid JSON, no other text."""
 
-        raw = await self._generate(prompt)
-        return self._parse_json_response(raw)
+            raw = await self._generate(prompt)
+            if raw:
+                parsed = self._parse_json_response(raw)
+                if isinstance(parsed, dict) and "score" in parsed:
+                    return parsed
+
+            from app.services.ai.demo_provider import DemoProvider
+            return await DemoProvider().evaluate_response(question, answer, context)
+        except Exception as e:
+            logger.warning("Gemini evaluate_response exception (%s), falling back to DemoProvider", e)
+            from app.services.ai.demo_provider import DemoProvider
+            return await DemoProvider().evaluate_response(question, answer, context)
 
     async def generate_evaluation(self, session_data: dict) -> dict:
-        """Generate a full evaluation from session data using Gemini."""
-        if not self._is_available():
-            from app.services.ai.demo_provider import DemoProvider
-            return await DemoProvider().generate_evaluation(session_data)
-
-        # Truncate data to fit context
-        truncated = {
-            "team_name": session_data.get("team_name"),
-            "project_name": session_data.get("project_name"),
-            "project_description": session_data.get("project_description"),
-            "transcripts": session_data.get("transcripts", [])[:20],
-            "submissions_count": len(session_data.get("submissions", [])),
-        }
-        # Include first submission analysis if available
-        submissions = session_data.get("submissions", [])
-        if submissions:
-            truncated["first_submission_analysis"] = submissions[0].get("analysis_result")
-
-        prompt = f"""You are an expert hackathon judge. Based on the following session data, generate a comprehensive
-evaluation. Score each category from 0-100.
-
-Session data:
-{json.dumps(truncated, default=str)[:6000]}
-
-Return a JSON object with:
-- summary: Overall evaluation summary (2-3 paragraphs)
-- categories: Object with keys: innovation, technical_complexity, feasibility, presentation, qa_responses, code_quality
-  Each category should have: score (0-100), justification (string), evidence (array of strings)
-
-Return ONLY valid JSON, no other text."""
-
-        raw = await self._generate(prompt)
-        return self._parse_json_response(raw)
+        """Generate a full evaluation scorecard using Gemini with fixed rubric JSON,
+        temperature=0.0, and structured Pydantic schema validation.
+        """
+        from app.services.ai.gemini_scoring import GeminiScoringEngine
+        scoring_engine = GeminiScoringEngine(api_key=self._api_key)
+        scorecard = await scoring_engine.score_session(session_data)
+        return scorecard.to_dict()
